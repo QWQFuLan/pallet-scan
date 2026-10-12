@@ -1,0 +1,17 @@
+# 摄像头需要安全上下文，强制 HTTPS（Cloudflare Pages 默认就是 https）
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(self), microphone=(), geolocation=()
+  X-Frame-Options: SAMEORIGIN
+
+# 带哈希的静态资源可以长期缓存
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# 入口文件不缓存，保证发版后立刻生效
+/
+  Cache-Control: public, max-age=0, must-revalidate
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate

@@ -1,0 +1,8 @@
+# Cloudflare Pages 配置（本应用是纯前端，无服务端代码）
+#
+# GitHub 连接方式：在 Cloudflare Dashboard → Workers & Pages → Create → Pages →
+#   连接本仓库，构建命令 `npm run build`，输出目录 `dist`。
+# CLI 方式：npm run deploy（等价于 wrangler pages deploy dist）
+name = "pallet-scan"
+pages_build_output_dir = "dist"
+compatibility_date = "2025-01-01"

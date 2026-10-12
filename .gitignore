@@ -1,0 +1,19 @@
+# 依赖与构建产物
+node_modules/
+dist/
+.tmp/
+.npm-cache/
+.mkcert/
+
+# 本地证书（每台机器自己生成：npm run cert）
+certs/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# 日志
+*.log
+npm-debug.log*

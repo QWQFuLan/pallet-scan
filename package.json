@@ -1,0 +1,46 @@
+{
+  "name": "pallet-scan",
+  "private": true,
+  "version": "1.0.0",
+  "description": "仓库扫码分卡板 - 本地离线运行的手机端 Web 应用（模式一：扫码建卡板 / 模式二：按货单配卡板）",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:http": "vite --mode insecure",
+    "build": "node scripts/build.mjs",
+    "build:strict": "tsc -b && node scripts/build.mjs",
+    "typecheck": "tsc -b",
+    "preview": "vite preview",
+    "start": "vite preview",
+    "cert": "node scripts/make-cert.mjs",
+    "test": "node tests/build-and-run.mjs",
+    "test:logic": "node tests/build-and-run.mjs",
+    "test:browser": "node tests/run-browser-test.mjs",
+    "test:all": "npm run typecheck && npm run test:logic && npm run build && npm run test:browser",
+    "deploy": "npm run build && wrangler pages deploy dist --project-name=pallet-scan",
+    "deploy:preview": "npm run build && wrangler pages deploy dist --project-name=pallet-scan --branch=preview"
+  },
+  "dependencies": {
+    "@zxing/browser": "^0.1.5",
+    "@zxing/library": "^0.21.3",
+    "dexie": "^4.0.11",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "xlsx": "^0.18.5",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "bwip-js": "^4.11.4",
+    "fake-indexeddb": "^6.2.5",
+    "happy-dom": "^20.14.6",
+    "playwright": "^1.64.0",
+    "selfsigned": "^2.4.1",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "vite-plugin-mkcert": "^1.17.6"
+  }
+}
