@@ -377,19 +377,19 @@ JSON 备份里的 `version` 是 2；导入旧的 v1 备份（没有箱子层）�
 npm test          # = npm run test:logic
 ```
 
-依次执行 4 组、共 **278 项** 检查：
+依次执行 4 组、共 **305 项** 检查：
 
-1. **核心逻辑**：Excel 表头识别（编号/型号列）与卡板号标准化、配板规则（归板/排序/层号/超限拆分/
-   异常分类/冲突取最多）、折板回归用例（刚好放满时不能多出空卡板、卡板号不重复、同编号连续）、
-   备份恢复（含旧格式兼容）。
-2. **Excel 往返**：模拟真实作业（一物一编号、重复编号只提示、撤销、遗留重复清理、型号、满板拦截）→
-   导出 → SheetJS 重新解析 → 模式二配板 → 配货表内容校验。
+1. **核心逻辑**：Excel 表头识别（条码/箱号/型号列）与卡板号标准化、配板规则（归板/排序/层号/超限拆分/
+   异常分类/冲突取最多）、折板回归用例（刚好放满时不能多出空卡板、卡板号不重复、同条码连续）、
+   备份恢复（v2 结构 + 旧 v1 按型号自动装箱）。
+2. **Excel 往返**：模拟真实作业（60 箱 × 20 条、箱内重复只提示、撤销、重复清理、每箱型号、
+   封箱后才能加下一箱、箱数上限）→ 导出 → SheetJS 重新解析 → 模式二配板 → 配货表内容校验。
 3. **条码识别**：用 bwip-js 生成 Code128 / EAN-13 / QR 图像，走项目真正使用的解码链路还原成文本，
    并验证空白画面不误报、连续解码稳定。
 4. **界面端到端**：在 happy-dom 里渲染真实 React 组件，用点击/输入驱动完整流程
-   （新建任务 → 输型号 → 手动扫码 → 重复编号只提示 → 一键删除遗留重复 → 换型号 → 撤销 → 删除 →
-   封板 → 下一板 → 扫满 40 箱拦截 → 重新读 IndexedDB 验证「刷新不丢」→ 模式二配板 →
-   导出文件内容校验 → JSON 备份恢复 → Tab 切换）。
+   （新建任务 → 添加箱子并扫型号 → 手动扫条码 → 重复条码只提示 → 一键删除重复 → 换箱重扫型号 →
+   撤销 → 删除 → 封箱 → 未封箱拦截加箱 → 封板 → 下一板 → 扫满 60 箱拦截 →
+   重新读 IndexedDB 验证「刷新不丢」→ 模式二配板 → 导出文件内容校验 → JSON 备份恢复 → Tab 切换）。
 
 ### 2. 真实浏览器自检（推荐在验收前跑一次）
 
@@ -400,19 +400,19 @@ npm run test:browser
 
 自动完成：构建（如果缺 `dist`）→ 起 `vite preview`（有 `certs/` 就用 https）→
 Playwright 启动 Chromium（**带假摄像头设备**，414×896 手机视口）→ 跑完关服务器。
-共 **56 项**检查，覆盖：
+共 **74 + 29 项**检查，覆盖：
 
 - 真实 Chromium 里渲染、移动端视口
 - **假摄像头**：`getUserMedia` 拿到视频流、分辨率有效、预览区可见、暂停后释放摄像头
-- **型号 + 解码 → 记箱全链路**：型号写入列表、喂入解码结果后新增行、重复编号不计数只提示、
-  换型号后新编号用新型号、连扫到 40 箱封顶、撤销回 39 箱
+- **弹窗里扫型号**：添加箱子弹窗内摄像头可用、扫到的型号自动填入型号框、确认后进入条码扫描
+- **解码 → 记条全链路**：喂入解码结果后条码数增加、重复条码不计数只提示、撤销后减少
+- **摄像头容错**（`tests/camera-resilience.mjs`，29 项）：保存了失效的摄像头 id 时自动降级不报错、
+  没有摄像头接口时给出中文原因且仍能手动录条码、设置页「测试摄像头」结果正确、
+  **iPhone SE 320×568 小屏**上取景框是横向长方形、条码列表可滚动、「查看条码」全屏视图可滚动
 - **真实文件下载**：单板 Excel（含箱号/型号列、明细行数与条码数对得上）、总表（4 个 Sheet）、
   配货表（3 个 Sheet、层号从 1 开始不跳层、异常表记录未匹配与数量差异）、JSON 备份
 - **刷新页面**：任务名/卡板数/当前卡板保留，并直接查 IndexedDB 确认数据真的落盘
 - **离线校验**：全程零外部网络请求、零页面级 JS 错误
-
-> 浏览器自检依赖 `npx playwright install chromium` 下载的 Chromium（约 150MB，仅开发自检用，
-> 不影响应用本身的离线运行）。
 
 ### 3. 单独验证 HTTPS 服务
 
@@ -421,9 +421,68 @@ npm run build && npm run preview     # 另开一个终端
 node tests/smoke-https.mjs 4173      # 检查页面与资源、确认页面无外部链接
 ```
 
+### 4. 验证线上部署（推送后跑一次）
+
+```bash
+npm run test:deployed                # 默认测 https://pallet-scan.pages.dev
+```
+
+在真实 Chromium 里对线上地址跑 **23 项**检查：HTTP 200、安全上下文、完整作业流程
+（加箱子扫型号 → 扫条码 → 重复不计数 → 封箱 → 封板并下载单板 Excel）、刷新后数据保留、
+取景框形状、「查看条码」全屏视图、零外部请求、零第三方 CDN。
+
 > 仍未自动覆盖的部分：**真实条码贴在真实镜头前的识别效果**（受光线、反光、距离、条码褶皱影响），
 > 需要按第二节用手机实测；自检里已用「生成的条码图像走项目同一条解码链路」把算法这一层覆盖掉，
-> 并在真实 Chromium 里用假摄像头跑通了 `getUserMedia` → 预览 → 解码 → 记箱的全流程。
+> 并在真实 Chromium 里用假摄像头跑通了 `getUserMedia` → 预览 → 解码 → 记条的全流程。
+
+---
+
+## 十一之二、部署（GitHub + Cloudflare Pages）
+
+### 1. 代码仓库
+
+- GitHub：<https://github.com/QWQFuLan/pallet-scan>
+- 首次提交：`main` 分支；`.gitignore` 已排除 `node_modules/`、`dist/`、`.tmp/`、`.npm-cache/`
+  以及 **`certs/`（证书私钥不上传）**。
+
+```bash
+git add -A
+git commit -m "说明"
+git push
+```
+
+### 2. Cloudflare Pages（自动发版，推荐）
+
+1. 打开 Cloudflare Dashboard → **Workers & Pages** → **Create** → **Pages** → **Connect to Git**
+2. 选择仓库 `QWQFuLan/pallet-scan`，分支 `main`
+3. 构建设置：
+   - Framework preset：`None`
+   - Build command：`npm run build`
+   - Build output directory：`dist`
+4. 保存后每次 `git push` 都会自动重新部署。线上地址：<https://pallet-scan.pages.dev>
+
+### 3. Cloudflare Pages（命令行部署）
+
+```bash
+npx wrangler login          # 首次登录
+npm run deploy              # = npm run build && wrangler pages deploy dist --project-name=pallet-scan
+npm run test:deployed       # 部署完跑一遍线上自检
+```
+
+仓库里的 `wrangler.toml` 已写好项目名与输出目录；`public/_headers` 会一并发布，
+设置了 HSTS、`Permissions-Policy: camera=(self)`（摄像头只允许本站使用）和静态资源长缓存。
+
+> ⚠️ **不要放 `public/_redirects`**：实测在 Cloudflare Pages 上会导致
+> `Failed to publish your Function. Got error: Unknown internal error occurred.`
+> 本应用是单页且入口就是 `/`，本来也不需要 SPA 回落规则。
+
+### 4. 线上环境的注意事项
+
+线上站点虽然是公网地址，但**数据依然只存在每台手机的浏览器里**（IndexedDB），
+不会上传到 Cloudflare 或任何服务器 —— 服务器只负责把静态文件发给你。
+要跨设备搬数据，用「数据导出」里的 JSON 备份文件。
+
+另外 Cloudflare 的域名是 **https**，所以手机直接就能用摄像头（不需要自签证书那套流程）。
 
 ---
 

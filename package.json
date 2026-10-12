@@ -18,7 +18,8 @@
     "test:browser": "node tests/run-browser-test.mjs",
     "test:all": "npm run typecheck && npm run test:logic && npm run build && npm run test:browser",
     "deploy": "npm run build && wrangler pages deploy dist --project-name=pallet-scan",
-    "deploy:preview": "npm run build && wrangler pages deploy dist --project-name=pallet-scan --branch=preview"
+    "deploy:preview": "npm run build && wrangler pages deploy dist --project-name=pallet-scan --branch=preview",
+    "test:deployed": "node tests/verify-deployed.mjs"
   },
   "dependencies": {
     "@zxing/browser": "^0.1.5",
